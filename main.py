@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Body                        #Body permite escribir datos en el body instead of requirements
+from fastapi import FastAPI, Body, Path, Query           #Body permite escribir datos en el body instead of requirements, y path para dar caracteristicas a la ruta de donde salga algo
 from fastapi.responses import HTMLResponse               #HTMLResponse es para integrar un codigo html en una respuesta 
-from pydantic import BaseModel                           #BaseModel es para hacer una clase para las peliculas   
+from pydantic import BaseModel, Field                    #BaseModel es para hacer una clase para las peliculas, Field es para dar caracteristicas a la clase   
 from typing import Optional                              #Optional permite establecer una condicion como opcional             
 
 
@@ -10,11 +10,23 @@ app.version = '0.0.1'
 
 class Movie(BaseModel):
     id: Optional[int] | None = None
-    title: str
-    overview: str
-    year: int
-    rating: float
-    category: str
+    title: str = Field(min_length=2, max_length=15)
+    overview: str = Field(min_length= 2, max_length= 50)
+    year: int = Field(le= 2024) #Al ser un int, para limitarlo se utiliza 'le', que significa 'lesser or equal than'
+    rating: float = Field(ge= 1, le= 10) #ge significa 'greater or equal than'
+    category: str = Field(min_length= 2, max_length= 15)
+
+    class Config:
+        schema_extra = {
+            'example': {
+                'id': 1,
+                'title': 'Titulo',
+                'overview': 'Descripcion de la Pelicula',
+                'year': 2024,
+                'rating': 9.5,
+                'category': 'Suspenso',
+            }
+        }
 
 movies = [
     {
@@ -45,14 +57,14 @@ def get_movies():
     return movies
 
 @app.get('/movies/{id}', tags=['movies'])
-def get_movie(id: int):
+def get_movie(id: int = Path(ge= 1, le= 2000)):  #Un ejemplo del uso del path, para dar caracteristicas a una funcion
     for item in movies:
         if item['id'] == id:
             return item
     return 'Not a registered number'
 
 @app.get('/movies/', tags=['movies'])
-def get_movies_by_category(category: str):   
+def get_movies_by_category(category: str = Query(min_length= 5, max_length= 15)):   
     return [item for item in movies if item['category'] == category ]
 
 @app.post('/movies', tags=['movies'])
