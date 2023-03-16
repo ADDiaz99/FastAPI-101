@@ -12,7 +12,7 @@ from fastapi.security import HTTPBearer
 #HTTPBearer permite validar las credenciales de un token
 
 app = FastAPI()
-app.title = 'Mi app con FastAPI'
+app.title = 'Primera app - FastAPI'
 app.version = '0.0.1'
 
 class JWTBearer(HTTPBearer):
