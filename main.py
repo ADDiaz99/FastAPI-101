@@ -68,7 +68,7 @@ movies = [
 
 @app.get('/', tags = ['home'])
 def message():
-    return HTMLResponse('<h1>Hello World</h1>')
+    return HTMLResponse('<h1>FastAPI Project!</h1>')
 
 @app.post('/login', tags= ['auth'])
 def login(user: User):
