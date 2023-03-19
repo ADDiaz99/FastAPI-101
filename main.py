@@ -4,6 +4,10 @@ from pydantic import BaseModel, Field
 from typing import Optional, List                                            
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
+from config.database import Base, engine, Session
+from models.movie import Movie
+
+
 
 #Body permite escribir datos en el body instead of requirements, y path para dar caracteristicas a la ruta de donde salga algo
 #HTMLResponse es para integrar un codigo html en una respuesta 
@@ -14,6 +18,8 @@ from fastapi.security import HTTPBearer
 app = FastAPI()
 app.title = 'Primera app - FastAPI'
 app.version = '0.0.1'
+
+Base.metadata.create_all(bind=engine)
 
 class JWTBearer(HTTPBearer):
     async def __call__(self, request: Request):
