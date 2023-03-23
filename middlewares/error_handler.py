@@ -2,6 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
+#El error handler se encarga de manejar todos los errores de nuestra aplicacion, se implemente de la siguiente manera:
 class ErrorHandler(BaseHTTPMiddleware):
     def __init__(self, app: FastAPI) -> None:
         super().__init__(app)
