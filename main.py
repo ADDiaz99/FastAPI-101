@@ -5,8 +5,8 @@ from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
 from config.database import Base, engine, Session
-from models.movie import Movie
-
+from models.movie import Movie as MovieModel
+from fastapi.encoders import jsonable_encoder
 
 
 #Body permite escribir datos en el body instead of requirements, y path para dar caracteristicas a la ruta de donde salga algo
@@ -84,39 +84,53 @@ def login(user: User):
 
 @app.get('/movies', tags=['movies'], response_model= List[Movie], status_code=200, dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
-    return JSONResponse(status_code=200, content=movies)
+    db = Session()
+    result = db.query(MovieModel).all()
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.get('/movies/{id}', tags=['movies'], response_model=Movie)
 def get_movie(id: int = Path(ge= 1, le= 2000)) -> Movie:  #Un ejemplo del uso del path, para dar caracteristicas a una funcion
-    for item in movies:
-        if item['id'] == id:
-            return JSONResponse(content=item)
-    return JSONResponse(status_code=404, content=[])
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()  #Filtramos por id, mostramos el primero
+    if not result: 
+        return JSONResponse(status_code=404, content={'message': "No encontrado"})
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.get('/movies/', tags=['movies'], response_model=List[Movie])
 def get_movies_by_category(category: str = Query(min_length= 5, max_length= 15)) -> List[Movie]:
-    data = [item for item in movies if item['category'] == category ]
-    return JSONResponse(content=[data])
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.category == category).all() #Filtramos por categoria y usamos .all para devolver todos los resultados
+    if not result:
+        return JSONResponse(status_code=404, content={'message': "Categoria no encontrada"})
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
-@app.post('/movies', tags=['movies'], response_model= dict, status_code=201)
+@app.post('/movies', tags=['movies'], response_model= dict, status_code=201) #Ruta de registro
 def create_movie(movie: Movie) -> dict:
-    movies.append(movie)
+    db = Session()
+    new_movie = MovieModel(**movie.dict()) #Le damos como parametros todos los datos de "Movie"
+    db.add(new_movie)
+    db.commit()
     return JSONResponse(status_code=201, content={"message": "Se ha registrado la pelicula"})
   
 @app.put('/movies/{id}', tags=['movies'], response_model= dict, status_code=200)
 def update_movie(id:int, movie: Movie) -> dict:
-    for item in movies:
-        if item['id'] == movie.id:
-            item['title'] = movie.title
-            item['overview'] = movie.overview
-            item['year'] = movie.year
-            item['rating'] = movie.rating
-            item['category'] = movie.category
-            return JSONResponse(status_code=200, content={"message": "Se ha modificado la pelicula"})
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not result:
+        return JSONResponse(status_code=404, content={'message': "No encontrado"})
+    result.title = movie.title
+    result.overview = movie.overview
+    result.year = movie.year
+    result.rating = movie.rating
+    result.category = movie.category
+    return JSONResponse(status_code=200, content={"message": "Se ha modificado la pelicula"})
 
 @app.delete('/movies/{id}', tags=['movies'], response_model= dict, status_code=200)
 def delete_movie(id: int) -> dict:
-    for item in movies:
-        if item['id'] == id:
-            movies.remove(item)
-            return JSONResponse(status_code=200, content={"message": "Se ha eliminado la pelicula"})
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not result:
+        return JSONResponse(status_code=404, content={'message': "No encontrado"})
+    db.delete(result)
+    db.commit()
+    return JSONResponse(status_code=200, content={"message": "Se ha eliminado la pelicula"})
